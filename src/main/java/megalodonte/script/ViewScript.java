@@ -16,6 +16,11 @@ public abstract class ViewScript {
         if (session == null) throw new IllegalStateException("Script is not attached to a view");
         return session.states();
     }
+    /** Access a rendered JSONC component, for custom platform adapters. */
+    protected final megalodonte.base.components.Component component(String id) {
+        states();
+        return session.component(id);
+    }
     protected final String text(String name) { return states().string(name).get(); }
     protected final Object get(String name) { return states().get(name); }
     protected final <T> State<T> state(String name, Class<T> type) { return states().state(name, type); }
