@@ -14,11 +14,16 @@ public final class ScriptLauncher {
         MegalodonteApp.appName(config.name());
         var app = new ScriptApplication(config, loader);
         MegalodonteApp.run(context -> {
-            context.useView(app);
+            context.useView(app, config.width(), config.height());
             var stage = context.javafxStage();
-            stage.setTitle(config.name());
-            stage.setWidth(config.width()); stage.setHeight(config.height());
-            stage.setMinWidth(config.minWidth()); stage.setMinHeight(config.minHeight());
+            configureWindow(stage, config);
         }, event -> { if (event == MegalodonteApp.Event.CloseRequest) app.close(); });
+    }
+    static void configureWindow(javafx.stage.Stage stage, AppConfig config) {
+        stage.setTitle(config.name());
+        stage.setResizable(true);
+        stage.setMaxWidth(Double.MAX_VALUE); stage.setMaxHeight(Double.MAX_VALUE);
+        stage.setWidth(config.width()); stage.setHeight(config.height());
+        stage.setMinWidth(config.minWidth()); stage.setMinHeight(config.minHeight());
     }
 }

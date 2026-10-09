@@ -17,6 +17,13 @@ class ScriptLifecycleTest {
         assertTrue(started.await(15, TimeUnit.SECONDS));
         var task = new FutureTask<Void>(() -> {
             ThemeManager.setTheme(new DefaultTheme());
+            var stage = new javafx.stage.Stage();
+            stage.setResizable(false); stage.setMaxWidth(600); stage.setMaxHeight(500);
+            ScriptLauncher.configureWindow(stage,ScriptApplicationTest.config());
+            assertTrue(stage.isResizable()); assertEquals(Double.MAX_VALUE,stage.getMaxWidth());
+            assertEquals(Double.MAX_VALUE,stage.getMaxHeight());
+            stage.setScene(new javafx.scene.Scene(new javafx.scene.layout.StackPane(),520,680));
+            stage.show(); stage.setMaximized(true); assertTrue(stage.isMaximized()); stage.close();
             TestPage.mounts = 0; TestPage.destroys = 0; NextPage.mounts = 0; NextPage.destroys = 0;
             var resources = Map.of("views/test_page.view.jsonc", ScriptApplicationTest.view("test_page", "navigate_next_page"),
                     "views/next_page.view.jsonc", ScriptApplicationTest.view("next_page", "navigate_test_page"));
