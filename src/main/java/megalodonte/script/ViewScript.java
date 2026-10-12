@@ -9,9 +9,35 @@ import java.util.function.Consumer;
 public abstract class ViewScript {
     private UiSession session;
     private Consumer<String> navigator;
+    private final java.util.concurrent.ExecutorService worker = java.util.concurrent.Executors.newSingleThreadExecutor(
+            runnable -> Thread.ofVirtual().name("megalodonte-view-worker").unstarted(runnable));
+    private volatile boolean detached;
+
 
     final void attach(UiSession session, Consumer<String> navigator) { this.session = session; this.navigator = navigator; }
-    final void detach() { session = null; navigator = null; }
+    final void detach() { detached = true; worker.shutdownNow(); session = null; navigator = null; }
+    /** Runs blocking work serially and delivers callbacks on the UI thread while this view is alive. */
+    protected final <T> void background(java.util.concurrent.Callable<T> work,
+                                      Consumer<T> success, Consumer<Exception> failure) {
+        states();
+        worker.submit(() -> {
+            try {
+                T value = work.call();
+                javafx.application.Platform.runLater(() -> { if (!detached) success.accept(value); });
+            } catch (Exception error) {
+                if (!detached) javafx.application.Platform.runLater(() -> { if (!detached) failure.accept(error); });
+            }
+        });
+    }
+    /** Framework-owned native directory picker; scripts do not create toolkit controls. */
+    protected final java.nio.file.Path chooseDirectory(String title, java.nio.file.Path initial) {
+        states();
+        var picker = new javafx.stage.DirectoryChooser();
+        picker.setTitle(title);
+        if (initial != null && java.nio.file.Files.isDirectory(initial)) picker.setInitialDirectory(initial.toFile());
+        var chosen = picker.showDialog(session.render().getJavaFxNode().getScene().getWindow());
+        return chosen == null ? null : chosen.toPath();
+    }
     protected final StateStore states() {
         if (session == null) throw new IllegalStateException("Script is not attached to a view");
         return session.states();

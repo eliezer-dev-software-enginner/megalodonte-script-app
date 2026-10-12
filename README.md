@@ -78,3 +78,12 @@ $env:JAVA_HOME = 'C:/Program Files/Java/jdk-25.0.4.1'
 ./gradlew.bat test
 ./gradlew.bat publishToMavenLocal
 ```
+
+### Trabalho assíncrono e escolha de pastas
+
+`background(Callable<T>, Consumer<T> success, Consumer<Exception> failure)` executa
+trabalho bloqueante em uma fila por view com thread virtual. Os callbacks retornam
+à thread de UI; ao descartar a view, o trabalho é interrompido e callbacks pendentes
+são ignorados. Capture os valores dos estados antes de entrar no worker.
+`chooseDirectory(title, initialPath)` apresenta o seletor nativo pertencente ao
+framework e retorna Path ou null. Assim scripts consumidores não importam JavaFX.
