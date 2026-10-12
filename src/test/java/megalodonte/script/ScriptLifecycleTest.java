@@ -22,6 +22,11 @@ class ScriptLifecycleTest {
             ScriptLauncher.configureWindow(stage,ScriptApplicationTest.config());
             assertTrue(stage.isResizable()); assertEquals(Double.MAX_VALUE,stage.getMaxWidth());
             assertEquals(Double.MAX_VALUE,stage.getMaxHeight());
+            var visual = javafx.stage.Screen.getPrimary().getVisualBounds();
+            assertTrue(stage.getX() >= visual.getMinX());
+            assertTrue(stage.getY() >= visual.getMinY());
+            assertTrue(stage.getX() + stage.getWidth() <= visual.getMaxX() + 1);
+            assertTrue(stage.getY() + stage.getHeight() <= visual.getMaxY() + 1);
             stage.setScene(new javafx.scene.Scene(new javafx.scene.layout.StackPane(),520,680));
             stage.show(); stage.setMaximized(true); assertTrue(stage.isMaximized()); stage.close();
             TestPage.mounts = 0; TestPage.destroys = 0; NextPage.mounts = 0; NextPage.destroys = 0;

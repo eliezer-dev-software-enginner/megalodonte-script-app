@@ -20,11 +20,14 @@ app.width=520
 app.height=680
 app.minWidth=420
 app.minHeight=640
+# opcionais: recurso PNG/JPEG e implementação de ThemeInterface
+app.icon=/assets/app.png
+app.themeClass=meu.app.MeuTema
 ```
 
 As dimensões são pixels da janela. O pacote dos scripts é obrigatório; as outras
 propriedades têm defaults conforme o exemplo, exceto app.name (Megalodonte).
-A configuração usa UTF-8. O launcher inicializa tema, janela e host das views.
+A configuração usa UTF-8. O launcher inicializa o tema, o ícone da janela e o host das views. Sem `app.themeClass`, usa `DefaultTheme`; sem `app.icon`, preserva o ícone padrão.
 
 ## Adicionar uma tela
 

@@ -6,8 +6,16 @@ import java.util.*;
 
 /** Declarative application setup. No client bootstrap class is needed. */
 public record AppConfig(String name, String initialView, String scriptsPackage, String views,
-                        int width, int height, int minWidth, int minHeight) {
+                        int width, int height, int minWidth, int minHeight, String icon, String themeClass) {
+    public AppConfig(String name, String initialView, String scriptsPackage, String views,
+                     int width, int height, int minWidth, int minHeight) {
+        this(name, initialView, scriptsPackage, views, width, height, minWidth, minHeight, null, null);
+    }
     public AppConfig {
+        if (icon != null && !icon.matches("/[A-Za-z0-9_./-]+\\.(png|jpg|jpeg)"))
+            throw new IllegalArgumentException("app.icon must name a classpath PNG or JPEG resource");
+        if (themeClass != null && !themeClass.matches("[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*"))
+            throw new IllegalArgumentException("app.themeClass must be a Java class name");
         Objects.requireNonNull(name); Objects.requireNonNull(views);
         ScriptResolver.classNameFor(initialView);
         if (scriptsPackage == null || !scriptsPackage.matches("[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*"))
@@ -21,12 +29,13 @@ public record AppConfig(String name, String initialView, String scriptsPackage, 
             if (stream == null) throw new IllegalArgumentException("Missing application.properties on the application classpath");
             var props = new Properties();
             props.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
-            Set<String> allowed = Set.of("app.name", "app.initialView", "app.scriptsPackage", "app.views", "app.width", "app.height", "app.minWidth", "app.minHeight");
+            Set<String> allowed = Set.of("app.name", "app.initialView", "app.scriptsPackage", "app.views", "app.width", "app.height", "app.minWidth", "app.minHeight", "app.icon", "app.themeClass");
             for (String key : props.stringPropertyNames()) if (!allowed.contains(key)) throw new IllegalArgumentException("Unknown application property: " + key);
             return new AppConfig(props.getProperty("app.name", "Megalodonte"), props.getProperty("app.initialView", "login"),
                     props.getProperty("app.scriptsPackage"), props.getProperty("app.views", "/views"),
                     number(props, "app.width", 520), number(props, "app.height", 680),
-                    number(props, "app.minWidth", 420), number(props, "app.minHeight", 640));
+                    number(props, "app.minWidth", 420), number(props, "app.minHeight", 640),
+                    props.getProperty("app.icon"), props.getProperty("app.themeClass"));
         } catch (IOException e) { throw new IllegalArgumentException("Cannot read application.properties", e); }
     }
     private static int number(Properties props, String key, int fallback) {
