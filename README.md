@@ -1,92 +1,64 @@
 # Megalodonte Script App
 
-Orquestra aplicações cujo código cliente contém apenas scripts Java por view.
-Usa `megalodonte-jsonc-ui` para interpretar e renderizar os dados.
+The [codebase guide](docs/CODEBASE.md) maps the launcher and script APIs.
 
-## Configurar uma vez
+This library runs applications whose client code consists of one Java `ViewScript` per view. It uses `megalodonte-jsonc-ui` to validate and render `.view.jsonc` data, and supplies the launcher, action resolution, navigation and lifecycle management.
 
-No consumidor, use `megalodonte:megalodonte-script-app:0.1.0`, Java 25 e o plugin
-JavaFX 25. `application.mainClass` é `megalodonte.script.ScriptLauncher`.
-Em desenvolvimento, use `includeBuild("../megalodonte-script-app")`.
+## Configure an application
 
-Crie `src/main/resources/application.properties`:
+Use `megalodonte:megalodonte-script-app:0.1.0`, Java 25 and JavaFX 25. Set `application.mainClass` to `megalodonte.script.ScriptLauncher`. During local development, `includeBuild("../megalodonte-script-app")` can substitute the adjacent source checkout.
+
+Create `src/main/resources/application.properties` (UTF-8):
 
 ```properties
-app.name=Meu aplicativo
+app.name=Example Application
 app.initialView=login
-app.scriptsPackage=meu.app.scripts
+app.scriptsPackage=example.app.scripts
 app.views=/views
 app.width=520
 app.height=680
 app.minWidth=420
 app.minHeight=640
-# opcionais: recurso PNG/JPEG e implementação de ThemeInterface
+# Optional PNG/JPEG resource and ThemeInterface implementation:
 app.icon=/assets/app.png
-app.themeClass=meu.app.MeuTema
+app.themeClass=example.app.MyTheme
 ```
 
-As dimensões são pixels da janela. O pacote dos scripts é obrigatório; as outras
-propriedades têm defaults conforme o exemplo, exceto app.name (Megalodonte).
-A configuração usa UTF-8. O launcher inicializa o tema, o ícone da janela e o host das views. Sem `app.themeClass`, usa `DefaultTheme`; sem `app.icon`, preserva o ícone padrão.
+Dimensions are window pixels. The script package is required. Other properties have defaults; the default application name is Megalodonte. The launcher initializes the theme, icon and view host. Without `app.themeClass` it uses `DefaultTheme`; without `app.icon` it keeps the platform icon.
 
-## Adicionar uma tela
+## Add a screen
 
-1. Crie `views/login.view.jsonc`, com id login e os estados/componentes.
-2. Crie a classe pública `meu.app.scripts.Login`, estendendo `ViewScript`.
-3. Implemente `public void onSubmit()` com a lógica após a validação.
+1. Add `views/login.view.jsonc` with `id: "login"`, local states and the component tree.
+2. Add public `example.app.scripts.Login extends ViewScript` with a public no-argument constructor.
+3. Put domain operations in public `void` methods such as `onSubmit()`.
 
-Não há lista de telas nem registro manual de ações. Cada destino é carregado pelo
-nome ao navegar. `login_screen.view.jsonc` resolve LoginScreen; login resolve Login.
-Os scripts são Java compilado, com construtor público sem argumentos, e recebem
-uma nova instância por sessão. Não há interpretação Java ou hot reload.
+There is no manual screen registry. Navigation loads destinations by name: `login_screen.view.jsonc` resolves `LoginScreen`, and `login` resolves `Login`. Every session receives a new script instance. Java source is compiled normally; no Java interpretation or hot reload occurs.
 
-### Eventos e dados
+### Actions and state
 
-- onSubmit: valida os campos antes de invocar o script.
-- navigate_cadastro: abre cadastro.view.jsonc e resolve Cadastro.java.
-- limpar: resolve um método público de instância `void limpar()` no script atual.
+- `onSubmit` validates inputs before invoking the script.
+- `navigate_signup` opens `signup.view.jsonc` and resolves `Signup.java`.
+- Another action name resolves a public, no-argument, `void` instance method in the current script.
 
-Nos componentes, use events.onClick para botões e events.onEnter para inputs.
-onSubmit, o prefixo navigate_ e os callbacks de ciclo de vida são reservados.
-As ações comuns precisam ser públicas, sem argumentos e retornar void. O runtime
-rejeita métodos de Object, helpers da classe base e callbacks de ciclo de vida.
-Apenas onSubmit passa pela validação automática.
-
-ViewScript oferece helpers protegidos:
+Use `events.onClick` on buttons and `events.onEnter` on supported inputs. `onSubmit`, the `navigate_` prefix and lifecycle callbacks are reserved. The runtime rejects `Object` methods, base helpers and lifecycle callbacks as ordinary actions. Only `onSubmit` receives automatic validation.
 
 ```java
 String email = text("email");
-Object valor = get("total");
+Object value = get("total");
 State<BigDecimal> total = state("total", BigDecimal.class);
-set("mensagem", "Pronto");
-message("Pronto"); // atalho para o estado string mensagem
-navigate("cadastro");
+set("mensagem", "Ready");
+message("Ready"); // shortcut for the string state named mensagem
+navigate("signup");
 ```
 
-O tratamento padrão de validação usa o estado string mensagem, que a view deve
-declarar e exibir. Para personalizar, sobrescreva onValidationFailed(Map<String,String>).
-Operações demoradas devem sair da thread JavaFX; atualizações dos estados de uma
-tela montada e navegação devem ocorrer na thread JavaFX.
+The default validation handler writes to the string state `mensagem`; the view must declare and display it. Override `onValidationFailed(Map<String,String>)` to change that behavior. Capture state values before long-running work; updates to a mounted view and navigation belong on the JavaFX thread.
 
-### Ciclo de vida
+### Lifecycle and asynchronous work
 
-onMount() é chamado ao montar a tela e onDestroy() antes de descartá-la.
-A navegação mantém a janela e libera bindings, tema, handlers e script anteriores.
-Um destino que falha ao carregar/renderizar preserva a tela atual.
-Reabrir uma tela cria um formulário novo, sem preservação implícita dos dados.
-ScriptApplication também pode ser hospedado por uma aplicação existente.
+`onMount()` runs after mounting; `onDestroy()` runs before disposal. Navigation retains the window and releases previous bindings, theme subscriptions, event handlers and script. A destination that fails to load or render leaves the current view intact. Reopening a view creates fresh local state. `ScriptApplication` can also be hosted by an existing application.
 
-```powershell
-$env:JAVA_HOME = 'C:/Program Files/Java/jdk-25.0.4.1'
-./gradlew.bat test
-./gradlew.bat publishToMavenLocal
+`background(Callable<T>, Consumer<T> success, Consumer<Exception> failure)` runs blocking work in a per-view queue backed by a virtual thread. Callbacks return to the UI thread. Disposing the view interrupts work and ignores pending callbacks. `chooseDirectory(title, initialPath)` opens the framework-owned native directory picker and returns a `Path` or `null`, so consumer scripts do not import JavaFX.
+
+```sh
+./gradlew test publishToMavenLocal
 ```
-
-### Trabalho assíncrono e escolha de pastas
-
-`background(Callable<T>, Consumer<T> success, Consumer<Exception> failure)` executa
-trabalho bloqueante em uma fila por view com thread virtual. Os callbacks retornam
-à thread de UI; ao descartar a view, o trabalho é interrompido e callbacks pendentes
-são ignorados. Capture os valores dos estados antes de entrar no worker.
-`chooseDirectory(title, initialPath)` apresenta o seletor nativo pertencente ao
-framework e retorna Path ou null. Assim scripts consumidores não importam JavaFX.
