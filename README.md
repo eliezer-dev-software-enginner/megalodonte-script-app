@@ -6,7 +6,36 @@ This library runs applications whose client code consists of one Java `ViewScrip
 
 ## Configure an application
 
-Use `megalodonte:megalodonte-script-app:0.1.0`, Java 25 and JavaFX 25.0.1. The project uses the Gradle 9.2.0 wrapper. The build resolves `megalodonte:megalodonte-jsonc-ui:0.1.0` and `megalodonte:megalodonte-theme:1.0.0-beta` from an adjacent source checkout when present, or from the configured Maven repositories (`mavenLocal()` and Maven Central). These artifacts must be available to build this library; the repository does not include them. For a consuming Gradle application, add the library dependency and set `application.mainClass` to `megalodonte.script.ScriptLauncher`. During local development, `includeBuild("../megalodonte-script-app")` can substitute an adjacent checkout of this library.
+Use `megalodonte:megalodonte-script-app:0.1.0`, Java 25 and JavaFX 25.0.1. The project uses the Gradle 9.2.0 wrapper. The build resolves `megalodonte:megalodonte-jsonc-ui:0.1.0` and `megalodonte:megalodonte-theme:1.0.0-beta` from an adjacent source checkout when present, or from the configured Maven repositories (`mavenLocal()` and Maven Central). These artifacts must be available to build this library; the repository does not include them. This repository publishes the library to Maven Local with `./gradlew publishToMavenLocal` once its dependencies resolve. During local development, `includeBuild("../megalodonte-script-app")` can substitute an adjacent checkout of this library.
+
+For a separate Gradle application using the published library, configure `build.gradle.kts` as follows. The library and its transitive dependencies must be available in the listed repositories:
+
+```kotlin
+plugins {
+    application
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation("megalodonte:megalodonte-script-app:0.1.0")
+}
+
+application {
+    mainClass.set("megalodonte.script.ScriptLauncher")
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+```
+
+JavaFX is a dependency of this library. After adding the resources and script below, run the consuming application with Gradle's `run` task.
 
 Create `src/main/resources/application.properties` (UTF-8):
 
@@ -28,9 +57,43 @@ Dimensions are window pixels. The script package is required. Other properties h
 
 ## Add a screen
 
-1. Add `views/login.view.jsonc` with `id: "login"`, local states and the component tree.
-2. Add public `example.app.scripts.Login extends ViewScript` with a public no-argument constructor.
+1. Add `src/main/resources/views/login.view.jsonc` with `id: "login"`, local states and the component tree.
+2. Add public `src/main/java/example/app/scripts/Login.java` extending `ViewScript` with a public no-argument constructor.
 3. Put domain operations in public `void` methods such as `onSubmit()`.
+
+For example, these two files provide a required input and a validated submit action:
+
+```jsonc
+{
+  "version": 1,
+  "id": "login",
+  "states": {
+    "name": { "type": "string", "initial": "" },
+    "mensagem": { "type": "string", "initial": "" }
+  },
+  "view": {
+    "type": "Column",
+    "children": [
+      { "type": "Input", "bind": { "value": "name" }, "validation": { "required": true } },
+      { "type": "Button", "props": { "text": "Submit" }, "events": { "onClick": "onSubmit" } }
+    ]
+  }
+}
+```
+
+```java
+package example.app.scripts;
+
+import megalodonte.script.ViewScript;
+
+public class Login extends ViewScript {
+    @Override public void onSubmit() {
+        message("Hello, " + text("name"));
+    }
+}
+```
+
+The example declares `mensagem` because the default validation handler and `message(...)` write to that state. Add a component bound to `mensagem` if you want to display the text in the view.
 
 There is no manual screen registry. Navigation loads destinations by name: `login_screen.view.jsonc` resolves `LoginScreen`, and `login` resolves `Login`. Every session receives a new script instance. Java source is compiled normally; no Java interpretation or hot reload occurs.
 
@@ -51,7 +114,7 @@ message("Ready"); // shortcut for the string state named mensagem
 navigate("signup");
 ```
 
-The default validation handler writes to the string state `mensagem`; the view must declare and display it. Override `onValidationFailed(Map<String,String>)` to change that behavior. Capture state values before long-running work; updates to a mounted view and navigation belong on the JavaFX thread.
+The default validation handler writes to the string state `mensagem`; the view must declare it and bind a component to display it. Override `onValidationFailed(Map<String,String>)` to change that behavior. Capture state values before long-running work; updates to a mounted view and navigation belong on the JavaFX thread.
 
 ### Lifecycle and asynchronous work
 
