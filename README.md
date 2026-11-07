@@ -55,6 +55,13 @@ app.minHeight=640
 
 Dimensions are window pixels. The script package is required. Other properties have defaults; the default application name is Megalodonte. The launcher initializes the theme, icon and view host. If enabled, `app.icon` must refer to a PNG or JPEG classpath resource and `app.themeClass` to an available `ThemeInterface` implementation. Without `app.themeClass` it uses `DefaultTheme`; without `app.icon` it keeps the platform icon.
 
+On Linux, `app.icon` sets the window icon, but a dock may also match the window's
+`WM_CLASS` to a `.desktop` entry. The current shared launcher uses the common
+JavaFX host, so it does not guarantee a distinct dock icon for each JSONC app.
+On X11, `xprop WM_CLASS` can inspect a window's class; compare it with the
+relevant entry's `StartupWMClass`. A Java entry point with an application-specific
+host is needed for the approach described in the [base troubleshooting guide](https://github.com/eliezer-dev-software-enginner/megalodonte-base#real-world-example).
+
 ## Add a screen
 
 1. Add `src/main/resources/views/login.view.jsonc` with `id: "login"`, local states and the component tree.
