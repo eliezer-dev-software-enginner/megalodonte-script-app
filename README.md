@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/megalodonte-logo.png" width="180" alt="Megalodonte logo">
+</p>
+
 # Megalodonte Script App
 
 The [codebase guide](docs/CODEBASE.md) maps the launcher and script APIs.
