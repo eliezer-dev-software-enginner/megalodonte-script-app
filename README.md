@@ -4,6 +4,9 @@
 
 # Megalodonte Script App
 
+> [!WARNING]
+> **Deprecated:** this launcher depends on the frozen `megalodonte-jsonc-ui`, which receives no fixes or new features. Migrate applications to **native mode** (`megalodonte <app> --mode native`) with Megalodonte components composed in Java.
+
 The [codebase guide](docs/CODEBASE.md) maps the launcher and script APIs.
 
 This library runs applications whose client code consists of one Java `ViewScript` per view. It uses `megalodonte-jsonc-ui` to validate and render `.view.jsonc` data, and supplies the launcher, action resolution, navigation and lifecycle management.

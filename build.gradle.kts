@@ -9,6 +9,7 @@ repositories { mavenLocal(); mavenCentral() }
 java { toolchain { languageVersion.set(JavaLanguageVersion.of(25)) }; withSourcesJar() }
 javafx { version = "25.0.1"; modules("javafx.controls", "javafx.graphics") }
 dependencies {
+    // DEPRECATED: megalodonte-jsonc-ui is frozen (no fixes). New work must use native mode.
     api("megalodonte:megalodonte-jsonc-ui:0.1.0")
     implementation("megalodonte:megalodonte-theme:1.0.0-beta")
     runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
